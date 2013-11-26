@@ -8,8 +8,8 @@
 #include <unistd.h>
 
 // common elements - eventually may be separate *.o to link
-#include "../play/play.h"
-#include "../common/commonCode.cpp"
+#include "play.h"
+#include "commonCode.cpp"
 
 
 int  numberOfPlayingClients = 0;
@@ -20,7 +20,7 @@ int  priority = 10;
 
 
 bool handleJoin();
-void handleClient();
+void handleClient(int activeID);
 bool  playing = true;
 int   totalDeadlockCounter = 0;
 
@@ -28,11 +28,6 @@ int   totalDeadlockCounter = 0;
 int Client[SEATS];
 
 		
-
-
-
-
-char recBuffer[MSGSIZE_MAX];
 
 int main(void)
 {
@@ -46,7 +41,7 @@ int main(void)
 	numberOfWaitingClients = 0;
 
 
-	msqid = msgget( ftok("/tmp", 'B'+ee)) , 0664 | IPC_CREAT );
+	msqid = initMessaging(true);
 	
 	
 	if ( msqid == -1 )
@@ -58,7 +53,7 @@ int main(void)
 
 	for(seatID=0;seatID<SEATS;seatID++) 
 	{
-		Client[ee] = -1;
+		Client[seatID] = false;
 	}
 	
 	
@@ -98,25 +93,28 @@ bool handleJoin()
 	if ( numberOfPlayingClients < SEATS )
 	{
 		// find first empty seat
-		for(seatID=0;(client[seatID])&&(seatID<SEATS);seatID++) {}
+		for(seatID=0;(Client[seatID])&&(seatID<SEATS);seatID++) {}
 		if ( seatID == SEATS ) { 
 			perror(" seat accounting error "); return(1);
 		}
 		// prime message queue with echo message 
 		// so that we will not be blocked
-		toSender.pl = echo;
-		if ( bNonEmptyAdminQ == false ) sendSender(SERVER_ADMIN_ID);
+		toServer.pl = echo;
+
+		if ( bNonEmptyAdminQ == false ) 
+		{
+			sendMsg(SERVER_JOIN);
+		}
 		bNonEmptyAdminQ = true;
 		do
 		{
-			recSender(SERVER_ADMIN_ID);
-			switch(toSender.pl)
+			recMsg(SERVER_JOIN);
+			
+			switch(toServer.pl)
 			{
 				case join:				
-				    playerID++;
-					toPlayer.clientID = seatID;
-					client[seatID] = true;
-					sendPlayer(CLIENT_ADMIN_ID);
+				    sendMsg(CLIENT_JOIN);
+					Client[seatID] = true;
 					numberOfPlayingClients++;
 					bReturn = true;
 					break;
@@ -135,23 +133,8 @@ bool handleJoin()
 
 void handleClient(int activeID)
 {
-	static int activeID = -1;
-	unsigned int dummyPriority  = 0;
 
-	if ( numberOfPlayingClients > 0 )
-	{
-		// Round-robin to next active client
-		activeID++;
-		if ( activeID >= SEATS ) activeID = 0;
-		while( EMPTY_MQD == mqdFromClient[activeID] ) 
-		{
-			activeID++;
-			if ( activeID >= SEATS ) activeID = 0;
-		}
-		
-		// Wait/get response from the active client
-		mq_receive( mqdFromClient[activeID] , (char *) &toServer , sizeof(toServer) , &dummyPriority );
-/*********************************************************************************************/
+/********************************************************************************************/
 /*********************************************************************************************/
 //                                   
 //                            PROCESS WAIT    
@@ -183,22 +166,6 @@ void handleClient(int activeID)
 			
 		}
 			
-		if ( toServer.pl == quit )
-		{
-			// If client just quit, do not talk to them anymore
-			// and remove them from the active list. 
-			mq_close( mqdFromClient[activeID] );
-			mq_close( mqdToClient[activeID] );
-			mq_unlink( fromClient(activeID) );
-			mq_unlink( toClient(activeID) );
-			numberOfPlayingClients--;
-		}
-		else
-		{
-			// If client is still active then respond to them to unblock them
-			mq_send( mqdToClient[activeID] , (char *) &fromServer , sizeof(fromServer) , priority );
-					
-		}
-	}
+	
 }
 

@@ -6,7 +6,7 @@
 
 bool addToAcepile(const t_card cardToAdd,const int playerIndex,const int suitIndex);
 
-void initMessaging(const bool create);
+int initMessaging(const bool create);
 void initAcepile();
 
 /*******************  MESSAGING COMMON CODE ********************************/
@@ -16,33 +16,33 @@ t_serverToPlayer fromServer;
 t_playerToServer toServer;
 int msqid;
 
-bool initMessaging(const bool bCreate)
+int  initMessaging(const bool bCreate)
 {
-	bReturn = false;
+	int msqreturn = -1;
 	if ( bCreate )
 	{
-		msqid = msgget( ftok("/tmp", 'B'+ee)) , 0664 | IPC_CREAT );
-		if ( msqid == -1 )
+		msqreturn = msgget( ftok("/tmp", 'B') , 0664 | IPC_CREAT );
+		if ( msqreturn == -1 )
 		{
 			perror(" message init/create error ");
 			exit(2);
 		}
-		else bReturn = true;
 	}
 	else
 	{
-		msqid = msgget( ftok("/tmp", 'B'+ee)) , 0664  );
-		if ( msqid == -1 )
+		msqreturn = msgget( ftok("/tmp", 'B') , 0664  );
+		if ( msqreturn == -1 )
 		{
 			perror(" message int error ");
 			exit(2);
 		}
-		else bReturn = true;
 	}
-	return bReturn;
+	return msqreturn;
 }
 	
 	
+bool sendMsg(int msgID);
+int  recMsg(int msgID);	
 
 
 

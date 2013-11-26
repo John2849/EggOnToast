@@ -19,6 +19,10 @@ typedef int t_card;
 
 #define MAKECARD(suit,value)   (suit*0x10+value)
 
+#define SERVER_JOIN  (1)
+#define CLIENT_JOIN  (2)
+#define SERVID(id)    (3+2*id)
+#define CLIENTID(id)  (4+3*id)
 
 #define EMPTYVALUE 0
 #define ACE 1

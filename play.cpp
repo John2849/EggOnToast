@@ -18,7 +18,7 @@ using namespace std;
 #include <string.h>
 
 #include "play.h"
-#include "../common/commonCode.cpp"
+#include "commonCode.cpp"
 
 
 
