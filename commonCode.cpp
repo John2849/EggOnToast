@@ -33,18 +33,34 @@ int msqid;
 int  initMessaging(const bool bCreate)
 {
 	int msqreturn = -1;
+	key_t myTok;
+	
+	myTok = ftok("/tmp",'B'+1);
+	
 	if ( bCreate )
 	{
-		msqreturn = msgget( ftok("/tmp", 'B') , 0664 | IPC_CREAT );
+		msqreturn = msgget( myTok , 0666 | IPC_CREAT );
 		if ( msqreturn == -1 )
 		{
-			perror(" message init/create error ");
-			exit(2);
+			printf(" Try removing queue \n");
+			
 		}
+		if ( msgctl( msqreturn , IPC_RMID , NULL ) == 0 )
+		{
+			printf(" Queue removed \n");
+		}
+		msqreturn = msgget( myTok , 0666 | IPC_CREAT );
+		if ( msqreturn == -1 )
+		{
+			perror(" message creation error ");
+			exit(1);
+		}
+			
+		
 	}
 	else
 	{
-		msqreturn = msgget( ftok("/tmp", 'B') , 0664  );
+		msqreturn = msgget( myTok  , 0666  );
 		if ( msqreturn == -1 )
 		{
 			perror(" message int error ");
@@ -55,8 +71,8 @@ int  initMessaging(const bool bCreate)
 }
 	
 	
-bool sendMsg(int msgID,char *msg,int msgSize);
-bool recMsg(int msgID, char *msg,int msgSize,int flag);	
+bool sendMsg(long msgID,char *msg,int msgSize);
+bool recMsg(long msgID, char *msg,int msgSize,int flag);	
 
 
 
@@ -66,10 +82,10 @@ bool recMsg(int msgID, char *msg,int msgSize,int flag);
 #define CLIENTID(id)  (4+3*id)
 
 
-bool sendMsg(int msgID,char *msg,int msgSize)
+bool sendMsg(long msgID,char *msg,int msgSize)
 {
 	bool bSuccess = false;
-	anyMessage.mtype = (long) msgID;
+	anyMessage.mtype = msgID;
 	memcpy( anyMessage.buf , msg , msgSize );
 	if ( msgsnd( msqid , &anyMessage , msgSize , 0 ) != -1 )
 	{
@@ -80,11 +96,13 @@ bool sendMsg(int msgID,char *msg,int msgSize)
 }
 
 
-bool recMsg(int msgID, char *msg,int msgSize,int iFlag)
+bool recMsg(long msgID, char *msg,int msgSize,int iFlag)
 {
 	bool bReturn = false;
-	if ( msgrcv( msqid , &anyMessage , msgSize , msgID , iFlag ) != -1 )
+	if ( msgrcv( msqid , &anyMessage , 1000 , msgID , iFlag ) != -1 )
 	{
+		printf("reeived message \n");
+		memcpy( msg , &anyMessage.buf[0] , msgSize );
 		bReturn = true;
 	}
 	return bReturn;

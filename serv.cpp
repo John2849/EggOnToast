@@ -26,15 +26,12 @@ bool  playing = true;
 int   totalDeadlockCounter = 0;
 
 
-int Client[SEATS];
-
+bool Client[SEATS];
 		
 
 int main(void)
 {
 	int seatID;
-	int waitcount = 0;
-	
 	
 
 	initAcepile();
@@ -61,16 +58,6 @@ int main(void)
 	playing = true;
 	while(playing) // do server loop
 	{
-		if ( numberOfPlayingClients == 0 ) 
-		{
-			sleep(5);
-			printf(" ... Try waiting - %d \n",waitcount++);
-		}
-		else
-		{
-			printf(" %d players \n",numberOfPlayingClients);
-			sleep(1);
-		}
 		handleJoin(); //  clients joining and quitting
 		numberOfDeadlockedClients = 0;
 		for(seatID=0;seatID<SEATS;seatID++) 
@@ -89,24 +76,44 @@ int main(void)
 // return true if there was some activity 
 bool handleJoin()
 {
-	int dummyID;
+	int dummyID = 0;
 	int seatID;
 	bool bReturn = false;
 	if ( numberOfPlayingClients < SEATS )
 	{
+		
 		// find first empty seat
 		for(seatID=0;(Client[seatID])&&(seatID<SEATS);seatID++) {}
 		if ( seatID == SEATS ) { 
 			perror(" seat accounting error "); return(1);
 		}
-		while ( ( numberOfPlayingClients < SEATS ) &&
-		       ( recMsg(SERVER_JOIN, (char *)&dummyID , sizeof(dummyID) ,  IPC_NOWAIT ) ) )
+		
+		if ( numberOfPlayingClients == 0 )
 		{
-		    sendMsg(CLIENT_JOIN , (char *) &seatID , sizeof(seatID) );
-			Client[seatID] = true;
-			numberOfPlayingClients++;
-			bReturn = true;
+			printf(" Wait until first player arrives \n");
+			if ( recMsg( REQUEST_JOIN , (char *)&dummyID , sizeof(dummyID) , 0 ) )
+			{
+				sendMsg(ACCEPT_JOIN , (char *) &seatID , sizeof(seatID) );
+				Client[seatID] = true;
+				numberOfPlayingClients++;
+				bReturn = true;
+			}
+			else
+			{
+				perror(" Unexpected message error "); exit(1); 
+			}
 		}
+		else 
+		{
+			if ( recMsg( REQUEST_JOIN , (char *)dummyID , sizeof(dummyID) , IPC_NOWAIT ) )
+			{
+				sendMsg(ACCEPT_JOIN , (char *) &seatID , sizeof(seatID) );
+				Client[seatID] = true;
+				numberOfPlayingClients++;
+				bReturn = true;
+			}
+		}
+			
 	}
 	return bReturn;
 }

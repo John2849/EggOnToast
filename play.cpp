@@ -85,7 +85,7 @@ int seatID = 0;
 int main(int argc,char *argv[])
 {
 	
-	int dummyID = 0;	
+	int dummyID = 0x1234;	
 	int changeID = 0;
 	
 	
@@ -96,13 +96,15 @@ int main(int argc,char *argv[])
 	
 	msqid = initMessaging(false);
 
+
 	if ( msqid != -1 )
 	{
 		printf(" Server was found \n");
 		printf(" Request seat and wait \n");
-		sendMsg( CLIENT_JOIN , (char *)dummyID , sizeof(dummyID) );
+		sendMsg( REQUEST_JOIN , (char *)&dummyID , sizeof(dummyID) );
 		printf(" Assign seat  \n");
-		recMsg(SERVER_JOIN, (char *)&seatID , sizeof(seatID) ,  0 );
+		recMsg( ACCEPT_JOIN , (char *)&seatID , sizeof(seatID) ,  0 );
+		useServer = true;
 			
 	}
 		

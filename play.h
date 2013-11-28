@@ -10,7 +10,7 @@
 typedef int t_card;
 
 
-#define SEATS       (10)
+#define SEATS       (4)
 #define SUITS        (4)
 
 #define VALUE(card)    (card&0x0F)
@@ -19,8 +19,8 @@ typedef int t_card;
 
 #define MAKECARD(suit,value)   (suit*0x10+value)
 
-#define SERVER_JOIN  (1)
-#define CLIENT_JOIN  (2)
+#define REQUEST_JOIN  (1)
+#define ACCEPT_JOIN  (2)
 #define SERVID(id)    (3+2*id)
 #define CLIENTID(id)  (4+3*id)
 
