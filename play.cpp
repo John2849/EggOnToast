@@ -136,7 +136,6 @@ int main(int argc,char *argv[])
 	{
 		toServer.cardToSend = EMPTY;
 		toServer.pl = idle;
-		sendMsg( SERVID(seatID) , (char *) &toServer , sizeof(toServer) );
 	}
 
 	printLocalState();
@@ -269,7 +268,7 @@ bool pToA()
 {
 	bool bReturn = false;
 	int i, k;
-	for (i = 0; (i < PILES) && !bReturn; i++)
+	for (i = 0; (i < SEATS) && !bReturn; i++)
 	{
 		if (l.shown[i][0] != EMPTY)
 		{
@@ -616,12 +615,14 @@ void printLocalState()
 	printCard(l.hand[l.handSelected]);
 	printf("\n");
 	printf("ACE:");
+	for(j=0;j<SEATS;j++)
 	for(i=0;i<SUITS;i++)
 		{
-		 printCard( fromServer.acePile[0][i]);
+		 printCard( fromServer.acePile[j][i]);
 		}
 	printf("\n");
 	printf("Remaining count = %d \n",l.remaining);
+	printf("Sequence %d Msqid %d",fromServer.changeID,msqid);
 	printf("\n\n");
 
 }

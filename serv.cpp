@@ -123,6 +123,9 @@ bool handleJoin()
 
 void handleClient(int seatID )
 {
+	static int msgCount = 0;
+	printf("%d;%d:Sending seat %d message \n",msqid,++msgCount,seatID);
+	sendMsg( CLIENTID(seatID) , (char *) &fromServer , sizeof(fromServer) );
 	recMsg( SERVID(seatID) , (char *) &toServer , sizeof(toServer) ,  0 );	
 	switch( toServer.pl )
 	{
@@ -149,7 +152,6 @@ void handleClient(int seatID )
 	
 	if ( Client[seatID] ) 
 	{
-		sendMsg( CLIENTID(seatID) , (char *) &fromServer , sizeof(fromServer) );
 	}
 		
 	
