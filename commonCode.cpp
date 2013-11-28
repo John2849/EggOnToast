@@ -67,6 +67,7 @@ int  initMessaging(const bool bCreate)
 			exit(2);
 		}
 	}
+	printf(" new msqid == %d \n",msqreturn);
 	return msqreturn;
 }
 	

@@ -107,6 +107,11 @@ int main(int argc,char *argv[])
 		useServer = true;
 			
 	}
+	else
+	{
+		perror(" NO VALID SERVER ******* EXIT  ");
+		exit(1);
+	}
 		
 		
 

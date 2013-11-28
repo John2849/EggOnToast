@@ -58,6 +58,7 @@ int main(void)
 	playing = true;
 	while(playing) // do server loop
 	{
+		sleep(1);
 		handleJoin(); //  clients joining and quitting
 		numberOfDeadlockedClients = 0;
 		for(seatID=0;seatID<SEATS;seatID++) 
@@ -88,7 +89,7 @@ bool handleJoin()
 			perror(" seat accounting error "); return(1);
 		}
 		
-		if ( numberOfPlayingClients == 0 )
+		if ( numberOfPlayingClients == 100 )  // QZDEBUG
 		{
 			printf(" Wait until first player arrives \n");
 			if ( recMsg( REQUEST_JOIN , (char *)&dummyID , sizeof(dummyID) , 0 ) )
@@ -105,7 +106,7 @@ bool handleJoin()
 		}
 		else 
 		{
-			if ( recMsg( REQUEST_JOIN , (char *)dummyID , sizeof(dummyID) , IPC_NOWAIT ) )
+			if ( recMsg( REQUEST_JOIN , (char *)&dummyID , sizeof(dummyID) , IPC_NOWAIT ) )
 			{
 				sendMsg(ACCEPT_JOIN , (char *) &seatID , sizeof(seatID) );
 				Client[seatID] = true;
