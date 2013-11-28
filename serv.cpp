@@ -14,6 +14,7 @@
 
 int  numberOfPlayingClients = 0;
 int  numberOfWaitingClients = 0;
+int  numberOfDeadlockedClients = 0;
 bool clientResponded[SEATS];
 int  priority = 10;
 
@@ -71,12 +72,13 @@ int main(void)
 			sleep(1);
 		}
 		handleJoin(); //  clients joining and quitting
+		numberOfDeadlockedClients = 0;
 		for(seatID=0;seatID<SEATS;seatID++) 
 		{
 			// Round-robin through all clients
-			if ( Client[seatID] != -1)
+			if ( Client[seatID] )
 			{
-				handleClient( Client[seatID] );
+				handleClient( seatID );
 			}
 		}
 	}
@@ -87,9 +89,9 @@ int main(void)
 // return true if there was some activity 
 bool handleJoin()
 {
+	int dummyID;
 	int seatID;
 	bool bReturn = false;
-	static bool bNonEmptyAdminQ =  false;
 	if ( numberOfPlayingClients < SEATS )
 	{
 		// find first empty seat
@@ -97,75 +99,51 @@ bool handleJoin()
 		if ( seatID == SEATS ) { 
 			perror(" seat accounting error "); return(1);
 		}
-		// prime message queue with echo message 
-		// so that we will not be blocked
-		toServer.pl = echo;
-
-		if ( bNonEmptyAdminQ == false ) 
+		while ( ( numberOfPlayingClients < SEATS ) &&
+		       ( recMsg(SERVER_JOIN, (char *)&dummyID , sizeof(dummyID) ,  IPC_NOWAIT ) ) )
 		{
-			sendMsg(SERVER_JOIN);
+		    sendMsg(CLIENT_JOIN , (char *) &seatID , sizeof(seatID) );
+			Client[seatID] = true;
+			numberOfPlayingClients++;
+			bReturn = true;
 		}
-		bNonEmptyAdminQ = true;
-		do
-		{
-			recMsg(SERVER_JOIN);
-			
-			switch(toServer.pl)
-			{
-				case join:				
-				    sendMsg(CLIENT_JOIN);
-					Client[seatID] = true;
-					numberOfPlayingClients++;
-					bReturn = true;
-					break;
-				case echo:
-					bNonEmptyAdminQ = false;
-					break;
-				default:
-					break;
-			}
-		} while( ( numberOfPlayingClients<SEATS ) && ( bNonEmptyAdminQ ) );
 	}
 	return bReturn;
 }
 					
 		
 
-void handleClient(int activeID)
+void handleClient(int seatID )
 {
-
-/********************************************************************************************/
-/*********************************************************************************************/
-//                                   
-//                            PROCESS WAIT    
-//
-/*********************************************************************************************/
-/*********************************************************************************************/
-		
-		switch( toServer.pl )
+	recMsg( SERVID(seatID) , (char *) &toServer , sizeof(toServer) ,  0 );	
+	switch( toServer.pl )
+	{
+		case newPlay:
+		fromServer.accepted = addToAcepile(toServer.cardToSend,toServer.player);
+		if ( fromServer.accepted )
 		{
-			case newPlay:
-			fromServer.accepted = addToAcepile(toServer.cardToSend,toServer.player);
-			if ( fromServer.accepted )
-			{
-				fromServer.changeID++;
-			}
-			totalDeadlockCounter = 0;
-			break;
-			
-			case idle:
-			totalDeadlockCounter = 0;
-			break;
-			
-			case quit:
-			break;
-
-			
-			default:
-			break;
-			
+			fromServer.changeID++;
 		}
+		break;
+
+		case deadlock:
+		numberOfDeadlockedClients++;
+		break;
 			
+		case quit:
+		Client[seatID] = false;
+		break;
+
+		default:
+		break;
+			
+	}
+	
+	if ( Client[seatID] ) 
+	{
+		sendMsg( CLIENTID(seatID) , (char *) &fromServer , sizeof(fromServer) );
+	}
+		
 	
 }
 

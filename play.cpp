@@ -79,75 +79,14 @@ bool useServer = false;
 int myID = 0;
 bool respondedToServer = false;
 
-mqd_t mqdToClient = EMPTY_MQD;
-mqd_t mqdFromClient = EMPTY_MQD;
-
-unsigned int priority = 10;
-unsigned int readPriority =0;
-char recBuffer  [MSGSIZE_MAX];
-
-
-
-bool getFromServer();
-bool sendToServer();	
-
-
-bool getFromServer()
-{
-	int bytesRead = 0;
-	bool bReturn = false;
-	unsigned int readPriority = 0;
-
-
-	bytesRead = mq_receive( mqdToClient , recBuffer , sizeof(recBuffer) , &readPriority );
-	
-
-	// See that we got the complete message 	
-	if ( bytesRead == sizeof(fromServer) ) // we got it all
-	{
-		bReturn = true;
-		memcpy( &fromServer , recBuffer , sizeof(fromServer) );
-	}
-	else if ( bytesRead >= 0 ) 
-	{ 
-		perror("Incomplete transfer "); 
-	}
-	else if ( bytesRead == -1 )
-	{
-		if ( errno != ENOMSG ) { perror("unexpected errorcode for msgrcv "); }
-	}	
-
-	return bReturn;
-}
-
-
-
-bool sendToServer()
-{
-	int bytesSent = 0;
-	bool bReturn = false;
-	priority = 10;
-	
-    // compose message to send
-
-	bytesSent = mq_send( mqdFromClient , (char *) &toServer , sizeof(toServer) , priority );
-	if ( bytesSent == 0 )
-	{
-		bReturn = true;
-	}
-	else { perror(" message sending error \n"); exit(1); }
-	
-	return bReturn;
-
-}
-
+int seatID = 0;
 
 
 int main(int argc,char *argv[])
 {
-	mqd_t servReq_mqd =  EMPTY_MQD;
-	mqd_t servAssign_mqd = EMPTY_MQD;
-	int bytesRec = -22;
+	
+	int dummyID = 0;	
+	int changeID = 0;
 	
 	
 	printf("starting \n");
@@ -155,56 +94,15 @@ int main(int argc,char *argv[])
 
 	// See if we can use remote server
 	
+	msqid = initMessaging(false);
 
-	int changeID = 0;
-	
-	useServer = false;
-	servReq_mqd = mq_open( MQ_REQNAME , O_RDWR  );
-
-	if ( servReq_mqd != EMPTY_MQD )
+	if ( msqid != -1 )
 	{
 		printf(" Server was found \n");
-		useServer = true; // we found the server
-		// we expect that the assignment queue will be there too...
-		servAssign_mqd = mq_open( MQ_ASSIGN_NAME , O_RDWR );
-		if ( servAssign_mqd == EMPTY_MQD )
-		{
-			perror(" bad server configuration - req queue without assignment queue ");
-			exit(1);
-		}
-		// send out notify
-		memcpy(recBuffer,MQ_REQTEXT,sizeof(MQ_REQTEXT)+1);
-		// send out message -priority does not matter
-		mq_send( servReq_mqd , recBuffer , sizeof(MQ_REQTEXT) , priority );
-		// wait for response 
-		bytesRec = mq_receive(servAssign_mqd , recBuffer , sizeof(recBuffer) , &readPriority);
-		if ( bytesRec == sizeof(myID) )
-		{
-			memcpy( &myID , recBuffer, sizeof(myID) );
-		}
-		else
-		{
-			perror(" Bad assignment resonse " );
-			exit(1);
-		}
-		// note: need large buffer with larger buffer size 
-		printf(" ASERVER AREPONDED %d:%s \n ",bytesRec,recBuffer
-		);
-	
-		// now get our queues
-		mqdToClient = mq_open( toClient(myID) , O_RDWR );
-		if ( mqdToClient == EMPTY_MQD )
-		{
-			perror(" cannot open toClient name");
-			exit(1);
-		}
-		mqdFromClient = mq_open( fromClient(myID) , O_RDWR );
-		if ( mqdFromClient == EMPTY_MQD )
-		{
-			perror(" cannot open fromClient name");
-			exit(1);
-		}
-		 
+		printf(" Request seat and wait \n");
+		sendMsg( CLIENT_JOIN , (char *)dummyID , sizeof(dummyID) );
+		printf(" Assign seat  \n");
+		recMsg(SERVER_JOIN, (char *)&seatID , sizeof(seatID) ,  0 );
 			
 	}
 		
@@ -231,9 +129,9 @@ int main(int argc,char *argv[])
 	{
 		toServer.cardToSend = EMPTY;
 		toServer.pl = idle;
-		sendToServer();
-		getFromServer();
+		sendMsg( SERVID(seatID) , (char *) &toServer , sizeof(toServer) );
 	}
+
 	printLocalState();
 
 
@@ -247,6 +145,7 @@ int main(int argc,char *argv[])
 		
 		if (useServer )
 		{
+			recMsg( CLIENTID(seatID) , (char *) &fromServer , sizeof(fromServer) ,  0 );	
 			if ( changeID != fromServer.changeID ) 
 			{	 
 				deadlockCount = 0; 
@@ -264,8 +163,7 @@ int main(int argc,char *argv[])
 		
 		if ( (useServer ) && (false == respondedToServer ) )
 		{
-			sendToServer();
-			getFromServer();
+			sendMsg( SERVID(seatID) , (char *) &toServer , sizeof(toServer) );
 			respondedToServer = true;
 		}
 
@@ -284,11 +182,7 @@ int main(int argc,char *argv[])
 	if ( useServer )
 	{
 		toServer.pl=quit;
-		msgsnd(msqid_server, &toServer,  sizeof(toServer), 0);
-		mq_close(servReq_mqd);
-		mq_close(servAssign_mqd);  
-		mq_close(mqdFromClient);
-		mq_close(mqdToClient);
+		sendMsg( SERVID(seatID) , (char *) &toServer , sizeof(toServer) );
 	}
 
 	
@@ -345,15 +239,7 @@ bool aceMatch( t_card cardToMatch)
 		    toServer.player =     iFound;  
 		    if ( useServer )
 		    {
-				sendToServer();
-				getFromServer();
-/*********************************************************************************
-***********************************************************************************
-// 
-//   Client waits for response from server 
-//
-***********************************************************************************
-**********************************************************************************/
+				sendMsg( SERVID(seatID) , (char *) &toServer , sizeof(toServer) );
 			}
 			if ( ( fromServer.accepted ) || (!useServer) )
 			{

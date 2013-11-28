@@ -1,6 +1,7 @@
 
 
-
+#include <stdio.h>
+#include <string.h>
 
 
 
@@ -14,6 +15,19 @@ void initAcepile();
 
 t_serverToPlayer fromServer;
 t_playerToServer toServer;
+
+typedef struct 
+{
+	long mtype;
+	char buf[1000];
+}t_anymessage;
+
+t_anymessage anyMessage;
+
+	
+
+
+
 int msqid;
 
 int  initMessaging(const bool bCreate)
@@ -41,9 +55,44 @@ int  initMessaging(const bool bCreate)
 }
 	
 	
-bool sendMsg(int msgID);
-int  recMsg(int msgID);	
+bool sendMsg(int msgID,char *msg,int msgSize);
+bool recMsg(int msgID, char *msg,int msgSize,int flag);	
 
+
+
+#define SERVER_JOIN  (1)
+#define CLIENT_JOIN  (2)
+#define SERVID(id)    (3+2*id)
+#define CLIENTID(id)  (4+3*id)
+
+
+bool sendMsg(int msgID,char *msg,int msgSize)
+{
+	bool bSuccess = false;
+	anyMessage.mtype = (long) msgID;
+	memcpy( anyMessage.buf , msg , msgSize );
+	if ( msgsnd( msqid , &anyMessage , msgSize , 0 ) != -1 )
+	{
+		bSuccess = true;
+	}
+	
+	return bSuccess;
+}
+
+
+bool recMsg(int msgID, char *msg,int msgSize,int iFlag)
+{
+	bool bReturn = false;
+	if ( msgrcv( msqid , &anyMessage , msgSize , msgID , iFlag ) != -1 )
+	{
+		bReturn = true;
+	}
+	return bReturn;
+}
+	     
+	
+
+		
 
 
 
