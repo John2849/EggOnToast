@@ -104,6 +104,7 @@ int main(int argc,char *argv[])
 		sendMsg( REQUEST_JOIN , (char *)&dummyID , sizeof(dummyID) );
 		printf(" Assign seat  \n");
 		recMsg( ACCEPT_JOIN , (char *)&seatID , sizeof(seatID) ,  0 );
+		myID = seatID;
 		useServer = true;
 			
 	}
@@ -212,6 +213,7 @@ bool hToA()
 	if ( aceMatch(currentHand()) )
 	{
 		useHand();
+		bReturn = true;
 	}
 	}
 	return bReturn;
@@ -240,21 +242,19 @@ bool aceMatch( t_card cardToMatch)
 		    toServer.cardToSend = cardToMatch;
 		    toServer.pl =         newPlay;
 		    toServer.player =     iFound;  
+		    printf(" ****************** %d:matched index %d - ",myID,toServer.player);
+		    printCard(toServer.cardToSend);
+		    printf(" ********************************* \n\n");
+		    
+		    
 		    if ( useServer )
 		    {
 				sendMsg( SERVID(seatID) , (char *) &toServer , sizeof(toServer) );
 				respondedToServer = true;
-				bAcceptedFromServer = true;
 			}
-			if ( ( fromServer.accepted ) || (!useServer) )
-			{
-				if (!useServer) // do it ourselves
-				{
-				   fromServer.acePile[iFound][suitToMatch] = cardToMatch;
-			    }
-				bAcceptedFromServer = true;
-				l.remaining--;
-			}
+		   fromServer.acePile[iFound][suitToMatch] = cardToMatch;
+			bAcceptedFromServer = true;
+			l.remaining--;
 				
 		}
 
@@ -443,14 +443,14 @@ void printCard(t_card card)
 	(SUIT(card)<SUITS)
 	    )
 	{
-		printf("%c%c ",v[VALUE(card)],s[SUIT(card)]);
+		printf("%c%c.",v[VALUE(card)],s[SUIT(card)]);
 	}
 	else
 	{
 		
 	  switch(card)
 	  {
-		  case EMPTY: printf("-- "); break;
+		  case EMPTY: printf("--"); break;
 	 	  case OPEN: printf("Op"); break;
 		  default: printf("??"); break;
 			break;
@@ -495,7 +495,7 @@ void init()
 
   for(i=0;i<PILES;i++)
   {
-      for(j=0;j<i;j++) l.hidden[i][j] = deal();
+//      for(j=0;j<i;j++) l.hidden[i][j] = deal();
       l.shown[i][0] = deal();
   }
   i=0;
@@ -619,7 +619,7 @@ void printLocalState()
 	printf("HAND:");
 	for(i=0;i<l.handCount;i++) printCard( l.hand[i] );
 	printf("\n SELECTED ");
-	printCard(l.hand[l.handSelected]);
+	printCard(l.hand[l.handSelected]); 
 	printf("\n");
 	printf("ACE:");
 	for(j=0;j<SEATS;j++)
@@ -628,7 +628,7 @@ void printLocalState()
 		 printCard( fromServer.acePile[j][i]);
 		}
 	printf("\n");
-	printf("Remaining count = %d \n",l.remaining);
+	printf("Remaining count(%d) = %d \n",myID,l.remaining);
 	printf("Sequence %d Msqid %d",fromServer.changeID,msqid);
 	printf("\n\n");
 

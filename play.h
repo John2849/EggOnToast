@@ -21,8 +21,8 @@ typedef int t_card;
 
 #define REQUEST_JOIN  (1)
 #define ACCEPT_JOIN  (2)
-#define SERVID(id)    (3+2*id)
-#define CLIENTID(id)  (4+3*id)
+#define SERVID(id)    (1000+(20*id))
+#define CLIENTID(id)  (2000+(20*id))
 
 #define EMPTYVALUE 0
 #define ACE 1

@@ -77,12 +77,6 @@ bool recMsg(long msgID, char *msg,int msgSize,int flag);
 
 
 
-#define SERVER_JOIN  (1)
-#define CLIENT_JOIN  (2)
-#define SERVID(id)    (3+2*id)
-#define CLIENTID(id)  (4+3*id)
-
-
 bool sendMsg(long msgID,char *msg,int msgSize)
 {
 	bool bSuccess = false;
@@ -100,7 +94,7 @@ bool sendMsg(long msgID,char *msg,int msgSize)
 bool recMsg(long msgID, char *msg,int msgSize,int iFlag)
 {
 	bool bReturn = false;
-	if ( msgrcv( msqid , &anyMessage , 1000 , msgID , iFlag ) != -1 )
+	if ( msgrcv( msqid , &anyMessage , msgSize , msgID , iFlag ) != -1 )
 	{
 		printf("reeived message \n");
 		memcpy( msg , &anyMessage.buf[0] , msgSize );
@@ -148,6 +142,14 @@ bool addToAcepile(const t_card cardToAdd,const int playerIndex)
 	{
 		bAccepted = true;
 		fromServer.acePile[playerIndex][suitIndex] = cardToAdd;
+	}
+	else
+	{
+		printf(" ************************************** CARD NOT ACCEPTED \n");
+		printf(" Client id = %d \n", toServer.clientID );
+		printf(" PLAYER INDEX %d \n",playerIndex);
+		printf(" CARD TO ADD %d  SUIT %d VALUE %d \n",cardToAdd , SUIT(cardToAdd) , VALUE(cardToAdd) );
+		exit(1);
 	}
 	
 	return bAccepted;
