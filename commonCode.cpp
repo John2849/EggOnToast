@@ -125,7 +125,7 @@ void initAcepile()
 	fromServer.changeID = 0;
 	fromServer.clientID = -1;
 	fromServer.accepted = false;
-	fromServer.numSeats = SEATS;
+
 	for(iSeats=0;iSeats<SEATS;iSeats++)
 	{
 		for(iSuit=0;iSuit<SUITS;iSuit++)

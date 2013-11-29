@@ -89,30 +89,13 @@ bool handleJoin()
 			perror(" seat accounting error "); return(1);
 		}
 		
-		if ( numberOfPlayingClients == 100 )  // QZDEBUG
+		if ( recMsg( REQUEST_JOIN , (char *)&dummyID , sizeof(dummyID) , IPC_NOWAIT ) )
 		{
-			printf(" Wait until first player arrives \n");
-			if ( recMsg( REQUEST_JOIN , (char *)&dummyID , sizeof(dummyID) , 0 ) )
-			{
-				sendMsg(ACCEPT_JOIN , (char *) &seatID , sizeof(seatID) );
-				Client[seatID] = true;
-				numberOfPlayingClients++;
-				bReturn = true;
-			}
-			else
-			{
-				perror(" Unexpected message error "); exit(1); 
-			}
-		}
-		else 
-		{
-			if ( recMsg( REQUEST_JOIN , (char *)&dummyID , sizeof(dummyID) , IPC_NOWAIT ) )
-			{
-				sendMsg(ACCEPT_JOIN , (char *) &seatID , sizeof(seatID) );
-				Client[seatID] = true;
-				numberOfPlayingClients++;
-				bReturn = true;
-			}
+			printf(" PROCESSING REQUEST \n");
+			sendMsg(ACCEPT_JOIN , (char *) &seatID , sizeof(seatID) );
+			Client[seatID] = true;
+			numberOfPlayingClients++;
+			bReturn = true;
 		}
 			
 	}

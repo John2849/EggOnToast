@@ -129,7 +129,6 @@ int main(int argc,char *argv[])
 	init();
 	if ( false == useServer )
 	{
-		fromServer.numSeats = 1;
 		initAcepile(); 
 	}
 	else
@@ -176,9 +175,7 @@ int main(int argc,char *argv[])
 		printLocalState();
 		
 		
-	}while( ( ( l.remaining > 0 ) ) &&
-	         ( useServer || ( toServer.pl!=deadlock) )
-	         );
+	}while ( l.remaining > 0 );
 	         
 	         
   }while( l.remaining > 0 );
@@ -228,7 +225,7 @@ bool aceMatch( t_card cardToMatch)
 	int suitToMatch = SUIT(cardToMatch);
 	int i;
 	int iFound;
-	for ( i=0; (i<fromServer.numSeats) && !(bMatched) ;i++)
+	for ( i=0; (i<SUITS) && !(bMatched) ;i++)
 	{
 		aceCard = fromServer.acePile[i][suitToMatch];
 		// empty is value one less then ace so we can just use the value match below
@@ -246,6 +243,8 @@ bool aceMatch( t_card cardToMatch)
 		    if ( useServer )
 		    {
 				sendMsg( SERVID(seatID) , (char *) &toServer , sizeof(toServer) );
+				respondedToServer = true;
+				bAcceptedFromServer = true;
 			}
 			if ( ( fromServer.accepted ) || (!useServer) )
 			{
@@ -268,7 +267,7 @@ bool pToA()
 {
 	bool bReturn = false;
 	int i, k;
-	for (i = 0; (i < SEATS) && !bReturn; i++)
+	for (i = 0; (i < PILES) && !bReturn; i++)
 	{
 		if (l.shown[i][0] != EMPTY)
 		{
@@ -556,11 +555,19 @@ t_card nextHand()
 		if ( atEnd() )
 		{
 			l.handSelected = 0;
+			for(i=1;(i<HANDCOUNT) && !atEnd();i++)
+			{
+				l.handSelected++;
+			}
 		}
-		for(i=0;(i<HANDCOUNT) && !atEnd();i++)
+		else
 		{
-			l.handSelected++;
+			for(i=0;(i<HANDCOUNT) && !atEnd();i++)
+			{
+				l.handSelected++;
+			}
 		}
+			
 		cardReturn = currentHand();
 	}
 	return cardReturn;

@@ -40,7 +40,7 @@ typedef int t_card;
 #define COLOR(card)    (SUIT(card)&0x2)
 
 #define PILES 7
-#define HANDCOUNT 3
+#define HANDCOUNT 1
 #define DEADLOCK 20
 #define DECKCOUNT (VALUES*SUITS)
 #define EMPTY  (0xF1)
@@ -75,7 +75,6 @@ typedef struct
 	int  clientID;
 	int  changeID;
 	bool  accepted;
-	int  numSeats;
 	t_card acePile[SEATS][SUITS];
 }t_serverToPlayer;
 
